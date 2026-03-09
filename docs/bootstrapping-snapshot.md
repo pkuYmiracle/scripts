@@ -27,9 +27,9 @@ vultr instance list
 ### 2. Copy the setup files to the instance
 
 ```bash
-scp scripts/bootstrap_instance.sh \
-    scripts/bench_runner.sh \
-    scripts/bench-runner.service \
+scp bootstrap_instance.sh \
+    bench_runner.sh \
+    bench-runner.service \
     root@<ip>:/tmp/
 ```
 

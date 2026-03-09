@@ -2,6 +2,11 @@
 
 ## 2026-03-09
 
+After some more runner info added to slack
+
+- "bench-runner 2026-03-09v2"
+- `0b4273c2-ddee-4bd8-b56b-596111207145`
+
 After merging offical key details
 
 - "bench-runner 2026-03-09v1"

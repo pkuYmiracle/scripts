@@ -35,6 +35,7 @@ import socket
 import subprocess
 import sys
 import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
@@ -48,7 +49,7 @@ except ImportError:
 
 # See docs/snapshot-versions.md
 
-DEFAULT_SNAPSHOT = "541697a1-c04c-4f54-bfc7-8ee90ae93aed"
+DEFAULT_SNAPSHOT = "0b4273c2-ddee-4bd8-b56b-596111207145" # Last known good: "541697a1-c04c-4f54-bfc7-8ee90ae93aed"
 
 
 @dataclass(frozen=True)
@@ -313,6 +314,11 @@ Examples:
         metavar="KEY",
         help="Official key to mark submissions as official (can also use PINCHBENCH_OFFICIAL_KEY env var)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable verbose debug logging for scheduling/executor flow",
+    )
 
     args = parser.parse_args()
 
@@ -336,6 +342,13 @@ Examples:
 
     buckets = distribute_models(models, args.count)
     non_empty = [(i, b) for i, b in enumerate(buckets) if b]
+
+    if args.debug:
+        bucket_sizes = [len(b) for b in buckets]
+        non_empty_indexes = [i for i, _ in non_empty]
+        log(f"DEBUG bucket sizes: {bucket_sizes}")
+        log(f"DEBUG non-empty bucket indexes ({len(non_empty_indexes)}): {non_empty_indexes}")
+        log(f"DEBUG workers: {args.workers}")
 
     log(f"\n{'=' * 60}")
     log("Vultr Benchmark Launcher")
@@ -366,14 +379,26 @@ Examples:
             )
             for i, bucket in non_empty
         }
+
+        if args.debug:
+            submitted_indexes = sorted(i for i, _ in futures.values())
+            log(f"DEBUG submitted futures: {len(futures)}")
+            log(f"DEBUG submitted indexes: {submitted_indexes}")
+
+        completed_count = 0
         for future in as_completed(futures):
             i, bucket = futures[future]
             label = f"bench-{i:02d}"
             try:
                 lbl, instance_id, ip = future.result()
                 created.append((lbl, instance_id, ip, bucket))
+                completed_count += 1
+                if args.debug:
+                    log(f"DEBUG future complete ({completed_count}/{len(futures)}): {label}")
             except Exception as e:
                 log(f"  ✗ {label} failed: {e}", error=True)
+                if args.debug:
+                    log(traceback.format_exc().rstrip(), error=True)
                 failed.append((label, str(e)))
 
     log(f"\n{'=' * 60}")
