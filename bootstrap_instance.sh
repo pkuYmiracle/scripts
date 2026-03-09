@@ -20,7 +20,7 @@
 #
 # After the script exits the instance will be shut down. Take a snapshot from
 # the Vultr portal or with:
-#   vultr snapshot create --instance-id <id> --description "bench-runner $(date +%Y-%m-%d)"
+#   vultr snapshot create -i <id> -d "bench-runner $(date +%Y-%m-%d)"
 # Then update the snapshot ID in orchestrate_vultr.py and create_instance.sh.
 
 set -euo pipefail
@@ -278,7 +278,7 @@ echo ""
 echo "Next steps:"
 echo "  1. Instance is shutting down now"
 echo "  2. Take snapshot:"
-echo "       vultr snapshot create --instance-id <id> --description \"bench-runner $(date +%Y-%m-%d)\""
+echo "       vultr snapshot create -i <id> -d \"bench-runner $(date +%Y-%m-%d)\""
 echo "  3. Note the new snapshot ID and update in:"
 echo "       orchestrate_vultr.py  (VultrConfig.snapshot default)"
 echo "       create_instance.sh    (--snapshot flag)"
@@ -289,7 +289,7 @@ echo ""
 echo "Bootstrap complete. Do NOT shut down the instance before snapshotting."
 echo "Take the snapshot from a RUNNING instance so it boots correctly:"
 echo ""
-echo "  vultr snapshot create --instance-id <id> --description \"bench-runner $(date +%Y-%m-%d)\""
+echo "  vultr snapshot create -i <id> -d \"bench-runner $(date +%Y-%m-%d)\""
 echo ""
 echo "Then delete this instance:"
 echo "  vultr instance delete <id>"

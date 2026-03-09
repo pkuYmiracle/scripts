@@ -43,35 +43,9 @@ except ImportError:
     print("ERROR: paramiko is required. Install with: uv pip install paramiko", file=sys.stderr)
     sys.exit(1)
 
-# Pre-2026-03-08 snapshots
-# benchrunner 2026-03-08 v0
-# c59496ef-734f-48b6-9701-ed80729ddd35
-#
-# From previous snapshots
-# bench-runner 2026-03-08 v1
-# 38bffed6-4d09-4cf4-840d-0e0180eb0d89
-#
-# Full bootstrap
-# bench-runner 2026-03-08 v2
-# 3924b3f6-d99d-4c6f-8883-43d6d847ff6b
-#
-# Full bootstrap with fixes
-# bench-runner 2026-03-08 v3
-# 2fce88d3-b2e5-4605-8ed7-1f3865f07773
-#
-# Even more fixes
-# bench-runner 2026-03-09 v4
-# 1a13a7ee-6d61-4677-9ad4-4494368323a0
-#
-# Still running instance
-# bench-runner 2026-03-09 v5
-# a0af88a0-ec03-46bf-a288-e0f0ad859550
-#
-# Taken from running instance (bc8b003a @ 96.30.204.111) — boots correctly
-# bench-runner 2026-03-09 v6
-# 3528464a-4710-4e43-b2ff-47643fcabea4
+# See docs/snapshot-versions.md 
 
-DEFAULT_SNAPSHOT = "3528464a-4710-4e43-b2ff-47643fcabea4"
+DEFAULT_SNAPSHOT = "541697a1-c04c-4f54-bfc7-8ee90ae93aed"
 
 
 @dataclass(frozen=True)
