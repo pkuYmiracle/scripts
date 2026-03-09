@@ -18,6 +18,7 @@ Usage:
 
 Options:
   --models:  Space-separated list of models to benchmark
+  --models-file: YAML file with default models (e.g. default-models.yml)
   --count:   Number of instances to create (default: 1)
              Models are distributed round-robin across instances.
              e.g. 9 models across 3 instances = 3 models per instance.
@@ -36,6 +37,8 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+
+import yaml
 
 try:
     import paramiko
@@ -237,6 +240,23 @@ def distribute_models(models: list[str], count: int) -> list[list[str]]:
     return buckets
 
 
+def load_models_from_yaml(path: str) -> list[str]:
+    """Load models from a YAML file."""
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    if isinstance(data, dict):
+        data = data.get("models")
+
+    if not isinstance(data, list):
+        raise ValueError(f"{path} must contain a YAML list or a 'models' list")
+
+    models = [str(m).strip() for m in data if str(m).strip()]
+    if not models:
+        raise ValueError(f"No models found in {path}")
+    return models
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Launch self-orchestrating Vultr benchmark instances",
@@ -250,7 +270,12 @@ Examples:
   uv run scripts/orchestrate_vultr.py --count 10 --models model1 model2 ... model30
         """,
     )
-    parser.add_argument("--models", nargs="+", required=True, help="Model IDs to benchmark")
+    parser.add_argument("--models", nargs="+", help="Model IDs to benchmark")
+    parser.add_argument(
+        "--models-file",
+        default="default-models.yml",
+        help="YAML file with default models (default: default-models.yml)",
+    )
     parser.add_argument(
         "--count",
         type=int,
@@ -291,6 +316,17 @@ Examples:
 
     args = parser.parse_args()
 
+    models = args.models
+    if not models:
+        if os.path.exists(args.models_file):
+            models = load_models_from_yaml(args.models_file)
+            log(f"Loaded {len(models)} models from {args.models_file}")
+        else:
+            parser.error(
+                "either --models must be provided or the default models file must exist "
+                f"({args.models_file})"
+            )
+
     config = VultrConfig(
         region=args.region,
         plan=args.plan,
@@ -298,13 +334,13 @@ Examples:
         ssh_keys=args.ssh_keys,
     )
 
-    buckets = distribute_models(args.models, args.count)
+    buckets = distribute_models(models, args.count)
     non_empty = [(i, b) for i, b in enumerate(buckets) if b]
 
     log(f"\n{'=' * 60}")
     log("Vultr Benchmark Launcher")
     log(f"{'=' * 60}")
-    log(f"Models:    {len(args.models)}")
+    log(f"Models:    {len(models)}")
     log(f"Instances: {args.count} ({len(non_empty)} with models assigned)")
     log(f"Official:  {'yes' if args.official_key else 'no'}")
     log("Note: laptop must stay online ~5m while instances boot")

@@ -30,6 +30,9 @@ startup, so orphaned instances are cleaned up even if the runner crashes.
 ## Running Benchmarks
 
 ```bash
+uv run orchestrate_vultr.py --count 10
+
+# Or override with an explicit list
 uv run orchestrate_vultr.py --count 10 \
   --models \
   anthropic/claude-opus-4.5 \
@@ -46,7 +49,8 @@ created.
 
 | Option       | Default                                     | Description                                         |
 | ------------ | ------------------------------------------- | --------------------------------------------------- |
-| `--models`   | _required_                                  | Model IDs to benchmark (space-separated)            |
+| `--models`   | _(optional)_                                | Model IDs to benchmark (space-separated)            |
+| `--models-file` | `default-models.yml`                     | YAML file used when `--models` is not provided      |
 | `--count`    | `1`                                         | Number of instances; models distributed across them |
 | `--region`   | `atl`                                       | Vultr region                                        |
 | `--plan`     | `vc2-1c-2gb`                                | Vultr instance plan                                 |
