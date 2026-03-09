@@ -15,6 +15,7 @@
 #   - OPENROUTER_API_KEY
 #   - PINCHBENCH_TOKEN
 #   - VULTR_API_KEY
+#   - PINCHBENCH_OFFICIAL_KEY (optional)
 #   - SLACK_WEBHOOK_URL (optional)
 #
 # After the script exits the instance will be shut down. Take a snapshot from
@@ -57,6 +58,8 @@ if [ -z "$VULTR_API_KEY" ]; then
     echo "ERROR: VULTR_API_KEY is required (needed for instance self-destruct)"
     exit 1
 fi
+
+read -r -p "PINCHBENCH_OFFICIAL_KEY (optional, press Enter to skip): " PINCHBENCH_OFFICIAL_KEY
 
 read -r -p "SLACK_WEBHOOK_URL (optional, press Enter to skip): " SLACK_WEBHOOK_URL
 
@@ -165,6 +168,7 @@ echo "--- Writing credentials to /etc/environment ---"
 sed -i '/^OPENROUTER_API_KEY=/d' /etc/environment
 sed -i '/^PINCHBENCH_TOKEN=/d' /etc/environment
 sed -i '/^VULTR_API_KEY=/d' /etc/environment
+sed -i '/^PINCHBENCH_OFFICIAL_KEY=/d' /etc/environment
 sed -i '/^SLACK_WEBHOOK_URL=/d' /etc/environment
 
 cat >> /etc/environment <<EOF
@@ -172,6 +176,10 @@ OPENROUTER_API_KEY=$OPENROUTER_API_KEY
 PINCHBENCH_TOKEN=$PINCHBENCH_TOKEN
 VULTR_API_KEY=$VULTR_API_KEY
 EOF
+
+if [ -n "$PINCHBENCH_OFFICIAL_KEY" ]; then
+    echo "PINCHBENCH_OFFICIAL_KEY=$PINCHBENCH_OFFICIAL_KEY" >> /etc/environment
+fi
 
 if [ -n "$SLACK_WEBHOOK_URL" ]; then
     echo "SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL" >> /etc/environment
@@ -183,6 +191,9 @@ export OPENROUTER_API_KEY=$OPENROUTER_API_KEY
 export PINCHBENCH_TOKEN=$PINCHBENCH_TOKEN
 export VULTR_API_KEY=$VULTR_API_KEY
 EOF
+if [ -n "$PINCHBENCH_OFFICIAL_KEY" ]; then
+    echo "export PINCHBENCH_OFFICIAL_KEY=$PINCHBENCH_OFFICIAL_KEY" >> /etc/profile.d/pinchbench.sh
+fi
 if [ -n "$SLACK_WEBHOOK_URL" ]; then
     echo "export SLACK_WEBHOOK_URL=$SLACK_WEBHOOK_URL" >> /etc/profile.d/pinchbench.sh
 fi
@@ -258,7 +269,7 @@ echo -n "  service enabled:  "; systemctl is-enabled bench-runner.service
 echo -n "  repo:             "; git -C "$SKILL_DIR" log -1 --oneline
 echo ""
 echo "Credentials set:"
-grep -E "OPENROUTER_API_KEY|PINCHBENCH_TOKEN|VULTR_API_KEY|SLACK_WEBHOOK_URL" /etc/environment \
+grep -E "OPENROUTER_API_KEY|PINCHBENCH_TOKEN|VULTR_API_KEY|PINCHBENCH_OFFICIAL_KEY|SLACK_WEBHOOK_URL" /etc/environment \
     | sed 's/=.*/=<set>/'
 
 echo ""

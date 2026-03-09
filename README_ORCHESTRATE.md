@@ -111,12 +111,13 @@ ssh root@<ip> 'bash /tmp/bootstrap_instance.sh'
 
 The script will prompt for:
 
-| Credential           | Where to find it                                             |
-| -------------------- | ------------------------------------------------------------ |
-| `OPENROUTER_API_KEY` | `skill/.env`                                                 |
-| `PINCHBENCH_TOKEN`   | `skill/.env`                                                 |
-| `VULTR_API_KEY`      | Vultr portal → Account → API                                 |
-| `SLACK_WEBHOOK_URL`  | Slack app webhook (optional — skip to disable notifications) |
+| Credential               | Where to find it                                             |
+| ------------------------ | ------------------------------------------------------------ |
+| `OPENROUTER_API_KEY`     | `skill/.env`                                                 |
+| `PINCHBENCH_TOKEN`       | `skill/.env`                                                 |
+| `VULTR_API_KEY`          | Vultr portal → Account → API                                 |
+| `PINCHBENCH_OFFICIAL_KEY`| `skill/.env` (optional — skip for unofficial submissions)    |
+| `SLACK_WEBHOOK_URL`      | Slack app webhook (optional — skip to disable notifications) |
 
 It installs Node 22, uv, vultr-cli, OpenClaw, clones the skill repo, pre-installs
 Python deps, writes credentials to `/etc/environment`, installs and enables
