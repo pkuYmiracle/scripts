@@ -12,7 +12,7 @@
 set -o pipefail
 
 LOG="/var/log/bench-runner.log"
-REMOTE_DIR="/root/skill"
+REMOTE_DIR="/root/skill/scripts"
 METADATA="http://169.254.169.254"
 
 # Tee all output to log file
@@ -86,23 +86,37 @@ if command -v at &>/dev/null && [ -n "$INSTANCE_ID" ]; then
         echo "WARNING: Could not schedule safety-net self-destruct (at daemon not running?)"
 fi
 
-# ── Read model list from userdata ──
-echo "Fetching userdata..."
-USERDATA=$(curl -sf --retry 5 --retry-delay 3 "$METADATA/v1/user-data" 2>/dev/null || true)
+# ── Read model list from file ──
+# The orchestrator creates a Vultr startup script per instance that writes
+# /root/benchmark_models.txt (one model per line) at first boot.
+# Startup scripts run regardless of snapshot vs OS image, unlike --userdata
+# which is silently ignored on snapshot-based instances.
+MODEL_FILE="/root/benchmark_models.txt"
 
-if [ -z "$USERDATA" ]; then
-    echo "ERROR: userdata is empty — was this instance launched by the orchestrator?"
+# Wait for the startup script to run and write the file (it runs early in boot
+# but may not be done by the time this service starts)
+echo "Waiting for model assignment file..."
+for attempt in $(seq 1 12); do
+    if [ -s "$MODEL_FILE" ]; then
+        break
+    fi
+    echo "  $MODEL_FILE not ready yet (attempt $attempt/12), waiting 10s..."
+    sleep 10
+done
+
+if [ ! -s "$MODEL_FILE" ]; then
+    echo "ERROR: $MODEL_FILE not found or empty after 2 minutes"
+    echo "Was this instance launched by the orchestrator?"
     exit 1
 fi
 
-echo "Userdata: $USERDATA"
+echo "Model assignment file:"
+cat "$MODEL_FILE"
 
-# Parse models array from JSON: {"models": ["model1", "model2"]}
-mapfile -t MODELS < <(echo "$USERDATA" | jq -r '.models[]' 2>/dev/null)
+mapfile -t MODELS < "$MODEL_FILE"
 
 if [ ${#MODELS[@]} -eq 0 ]; then
-    echo "ERROR: No models found in userdata JSON (expected {\"models\": [...]})"
-    echo "Raw userdata was: $USERDATA"
+    echo "ERROR: No models found in $MODEL_FILE"
     exit 1
 fi
 
@@ -120,8 +134,14 @@ git pull || echo "WARNING: git pull failed, continuing with existing code"
 # ── Registration ──
 echo ""
 echo "=== Running registration ==="
-REGISTRATION_OUTPUT=$(uv run benchmark.py --register 2>&1 | tee /dev/stderr)
+# Use a temp file so output is both written to the log (via the exec redirect)
+# and available for URL extraction. Command substitution $(...) runs in a subshell
+# that doesn't inherit the exec redirect, so tee /dev/stderr wouldn't reach the log.
+REG_TMPFILE=$(mktemp)
+uv run benchmark.py --register 2>&1 | tee "$REG_TMPFILE"
 REGISTER_EXIT=${PIPESTATUS[0]}
+REGISTRATION_OUTPUT=$(cat "$REG_TMPFILE")
+rm -f "$REG_TMPFILE"
 
 if [ "$REGISTER_EXIT" -ne 0 ]; then
     echo "ERROR: Registration failed"
@@ -133,7 +153,7 @@ Check: \`ssh root@$(curl -sf $METADATA/v1/interfaces/0/ipv4/address || echo unkn
 fi
 echo "✓ Registration complete"
 
-# Extract claim URL ("Claim URL: https://...") and any leaderboard URL from registration output
+# Extract claim URL ("Claim URL: https://...") from registration output
 CLAIM_URL=$(echo "$REGISTRATION_OUTPUT" | grep -i "Claim URL" | grep -oE 'https?://[^ ]+' | head -1 || true)
 
 MODEL_LIST=$(printf ' • %s\n' "${MODELS[@]}")
@@ -151,8 +171,11 @@ for model in "${MODELS[@]}"; do
     echo "=== Benchmarking: $model ==="
     echo "Started at: $(date -u)"
 
-    MODEL_OUTPUT=$(uv run benchmark.py --model "$model" 2>&1 | tee /dev/stderr)
+    MODEL_TMPFILE=$(mktemp)
+    uv run benchmark.py --model "$model" 2>&1 | tee "$MODEL_TMPFILE"
     MODEL_EXIT=${PIPESTATUS[0]}
+    MODEL_OUTPUT=$(cat "$MODEL_TMPFILE")
+    rm -f "$MODEL_TMPFILE"
 
     # Extract "View at: https://..." leaderboard URL from model run output
     MODEL_URL=$(echo "$MODEL_OUTPUT" | grep -i "View at" | grep -oE 'https?://[^ ]+' | head -1 || true)

@@ -120,14 +120,15 @@ The script will prompt for:
 
 It installs Node 22, uv, vultr-cli, OpenClaw, clones the skill repo, pre-installs
 Python deps, writes credentials to `/etc/environment`, installs and enables
-`bench-runner.service`, resets cloud-init, and shuts the instance down.
+`bench-runner.service`, and resets cloud-init.
 
 The bootstrap script is idempotent — if it fails partway through, fix the issue
 and re-run it. Already-installed tools will be skipped.
 
 ### 4. Take the snapshot
 
-Once the instance is stopped (bootstrap shuts it down automatically):
+Take the snapshot while the instance is **still running**. Snapshots taken from
+stopped instances boot into a stopped state, which breaks the orchestrator.
 
 ```bash
 vultr snapshot create \

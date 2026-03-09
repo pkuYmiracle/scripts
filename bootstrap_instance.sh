@@ -273,7 +273,12 @@ echo "       orchestrate_vultr.py  (VultrConfig.snapshot default)"
 echo "       create_instance.sh    (--snapshot flag)"
 echo ""
 
-# ── Shutdown ──
-echo "Shutting down in 5 seconds..."
-sleep 5
-shutdown -h now
+# ── Done ──
+echo ""
+echo "Bootstrap complete. Do NOT shut down the instance before snapshotting."
+echo "Take the snapshot from a RUNNING instance so it boots correctly:"
+echo ""
+echo "  vultr snapshot create --instance-id <id> --description \"bench-runner $(date +%Y-%m-%d)\""
+echo ""
+echo "Then delete this instance:"
+echo "  vultr instance delete <id>"
