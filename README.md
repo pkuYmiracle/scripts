@@ -1,5 +1,7 @@
 # Vultr Benchmark Orchestration
 
+> ⚠️ **Fair warning:** This was vibe-coded from a plane using [OpenClaw](https://github.com/openclaw/openclaw). It works, but don't expect enterprise-grade polish. PRs welcome, flames not so much. 🦀✈️
+
 Instances are created with a model list baked into their userdata, run benchmarks
 autonomously, and self-destruct when done. Your laptop only needs to be running
 long enough to fire the `vultr instance create` calls (~10 seconds).
