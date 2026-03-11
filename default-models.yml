@@ -42,6 +42,7 @@ models:
   # Other
   - arcee-ai/trinity-large-preview:free
   - moonshotai/kimi-k2.5
+  - nvidia/nemotron-3-super-120b-a12b:free
   - stepfun/step-3.5-flash
   - x-ai/grok-4.1-fast
   - z-ai/glm-4.5-air
