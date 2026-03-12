@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
 import socket
 import subprocess
 import sys
@@ -227,16 +228,24 @@ def launch_instance(
     return label, instance_id, ip
 
 
-def distribute_models(models: list[str], count: int) -> list[list[str]]:
+def distribute_models(models: list[str], count: int, *, shuffle: bool = True) -> list[list[str]]:
     """
     Distribute models across N instances using round-robin assignment.
+
+    When shuffle=True (default), the model order is randomized before distribution.
+    This prevents the same models from always landing on the same instance positions,
+    which helps avoid systematic biases in benchmarking (e.g., first instances getting
+    all the "A" models alphabetically).
 
     Examples:
       9 models, 3 instances → [[m0,m3,m6], [m1,m4,m7], [m2,m5,m8]]
       3 models, 5 instances → [[m0], [m1], [m2], [], []]
     """
+    working_models = list(models)
+    if shuffle:
+        random.shuffle(working_models)
     buckets: list[list[str]] = [[] for _ in range(count)]
-    for i, model in enumerate(models):
+    for i, model in enumerate(working_models):
         buckets[i % count].append(model)
     return buckets
 
@@ -319,6 +328,11 @@ Examples:
         action="store_true",
         help="Enable verbose debug logging for scheduling/executor flow",
     )
+    parser.add_argument(
+        "--no-shuffle",
+        action="store_true",
+        help="Disable randomization of model order (default: models are shuffled before distribution)",
+    )
 
     args = parser.parse_args()
 
@@ -340,7 +354,7 @@ Examples:
         ssh_keys=args.ssh_keys,
     )
 
-    buckets = distribute_models(models, args.count)
+    buckets = distribute_models(models, args.count, shuffle=not args.no_shuffle)
     non_empty = [(i, b) for i, b in enumerate(buckets) if b]
 
     if args.debug:
