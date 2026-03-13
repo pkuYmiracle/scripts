@@ -90,4 +90,35 @@ See [docs/bootstrapping-snapshot.md](docs/bootstrapping-snapshot.md)
 | `bootstrap_instance.sh` | One-shot setup script for building a new snapshot image                                     |
 | `setup_snapshot.sh`     | Lighter alternative to bootstrap — installs just the runner files onto an existing instance |
 | `create_instance.sh`    | Convenience shell script with the full model list pre-filled                                |
-| `delete_instances.sh`   | Emergency cleanup: delete instances by ID                                                   |
+| `utilities/delete_instances.sh` | Emergency cleanup: delete instances by ID                                             |
+| `utilities/reaper.sh`   | Automated cleanup: delete stale instances older than TTL                                    |
+
+---
+
+## Automated Cleanup (Reaper)
+
+While instances self-destruct on completion, sometimes things go wrong. The reaper
+script provides an external safety net by deleting any `bench-*` instances older
+than a configurable TTL (default: 6 hours).
+
+```bash
+# Preview what would be deleted
+./utilities/reaper.sh --dry-run
+
+# Delete stale instances (default: older than 6 hours)
+./utilities/reaper.sh
+
+# Custom TTL (2 hours = 7200 seconds)
+./utilities/reaper.sh --ttl 7200
+```
+
+**Recommended cron setup** (run every hour):
+
+```cron
+0 * * * * /path/to/pinchbench-scripts/utilities/reaper.sh >> /var/log/reaper.log 2>&1
+```
+
+This catches any instances that:
+- Failed to self-destruct due to crashes
+- Got stuck in a hung state
+- Had their `at` safety-net fail for any reason
